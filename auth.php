@@ -1,53 +1,24 @@
 <?php
-//Script Author: phccoder https://t.me/phccoder
-	include 'config.php';
-	
-	if ($forceHttps) {
-		if (!(isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https'))	{
-			$redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-			header('HTTP/1.1 301 Moved Permanently');
-			header('Location: ' . $redirect);
-			exit();
-		}
-	}
+//Script Author: phccoder @PHCC0D3r
+// It handles config, session, https, and themes.
+include 'init.php';
 
-	if($forceAuth){
-		session_start();
-		if (isset($_SESSION["Auth"])) { 
-			header("location: ./");
-			exit();
-		}
-	}
+// 1. CHECK FOR A LOGIN ATTEMPT (form submission)
+if ($forceAuth && isset($_POST['auth'])) {
+    $submitted_pass = $_POST['authpass'];
+    if (password_verify($submitted_pass, $AuthPass_Hashed)) {
+        session_regenerate_id(true);
+        $_SESSION['Auth'] = 'allowed';
+        header("location: ./");
+        exit();
+    }
+}
 
-	if (!isset($_COOKIE['checker_theme'])) {
-		setcookie('checker_theme', 'dark', time() + (86400 * 30), "/");
-		$theme_background = '#212121';
-		$theme_text = '#FFFFFF';
-		$theme_background_opp = '#FFFFFF';
-		$theme_text_opp = '#000000';
-	}else{
-		if ($_COOKIE['checker_theme'] == 'dark') {
-			$theme_background = '#212121';
-			$theme_text = '#FFFFFF';
-			$theme_background_opp = '#FFFFFF';
-			$theme_text_opp = '#000000';
-		}else{
-			$theme_background = '#FFFFFF';
-			$theme_text = '#000000';
-			$theme_background_opp = '#212121';
-			$theme_text_opp = '#FFFFFF';
-		}
-	}
-
-	if(isset($_POST['auth'])){
-		$authpass = $_POST['authpass'];
-		if ($authpass == $AuthPass) {
-			session_start();
-			$_SESSION['Auth'] = 'allowed';
-			header("location: ./");
-			exit();
-		}
-	}
+// 2. CHECK IF USER IS ALREADY LOGGED IN
+if ($forceAuth && isset($_SESSION['Auth']) && $_SESSION['Auth'] === 'allowed') {
+    header("location: ./");
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -121,7 +92,7 @@
 				<form method="POST">
 					<div class="form-group">
 						<div class="input-group mb-3 ">
-							<input type="text" class="form-control" style="border-color: #dc3545;background: transparent;color: <?php echo $theme_text ?>;" id="authpass" name="authpass" placeholder="Auth Pass">
+							<input type="password" class="form-control" style="border-color: #dc3545;background: transparent;color: <?php echo $theme_text ?>;" id="authpass" name="authpass" placeholder="Auth Pass">
 						</div>
 					</div>
 					<button style="margin-top: 20px" type="submit" name="auth" class="btn btn-outline-danger btn-block">ACCESS</button>

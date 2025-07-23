@@ -5,11 +5,6 @@ ini_set('display_errors', 0);
 
 /*===[Security Setup]=========================================*/
 include 'config.php';
-if ($_GET['referrer'] != "phccoder") { 
-    $i = rand(0,sizeof($red_link));
-    header("location: $red_link[$i]");
-    exit();
-}
 
 /*===[Variable Setup]=========================================*/
 $telebot = $_GET['telebot'];

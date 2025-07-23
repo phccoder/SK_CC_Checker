@@ -1,4 +1,4 @@
-$(document).ready(function(){
+$(document).ready(function () {
     var shown_x = "0";
     var shown_y = "0";
     var shown_z = "0";
@@ -9,13 +9,13 @@ $(document).ready(function(){
 
     $("#howto").hide();
 
-    $('#cardsLiveCVV').click(function(){
+    $('#cardsLiveCVV').click(function () {
         playClick();
         var x = document.getElementsByClassName("live_cvv");
-        for(var i=0; i < x.length; i++){
-            if(shown_x == "0"){
+        for (var i = 0; i < x.length; i++) {
+            if (shown_x == "0") {
                 x[i].style.display = 'block';
-            }else{
+            } else {
                 x[i].style.display = 'none';
             }
         }
@@ -26,13 +26,13 @@ $(document).ready(function(){
         }
         $("#clear_cvv").toggle();
     });
-    $('#cardsLiveCCN').click(function(){
+    $('#cardsLiveCCN').click(function () {
         playClick();
         var y = document.getElementsByClassName("live_ccn");
-        for(var i=0; i < y.length; i++){
-            if(shown_y == "0"){
+        for (var i = 0; i < y.length; i++) {
+            if (shown_y == "0") {
                 y[i].style.display = 'block';
-            }else{
+            } else {
                 y[i].style.display = 'none';
             }
         }
@@ -43,14 +43,14 @@ $(document).ready(function(){
         }
         $("#clear_ccn").toggle();
     });
-    
-    $('#cardsDead').click(function(){
+
+    $('#cardsDead').click(function () {
         playClick();
         var z = document.getElementsByClassName("dead");
-        for(var i=0; i < z.length; i++){
-            if(shown_z == "0"){
+        for (var i = 0; i < z.length; i++) {
+            if (shown_z == "0") {
                 z[i].style.display = 'block';
-            }else{
+            } else {
                 z[i].style.display = 'none';
             }
         }
@@ -58,15 +58,15 @@ $(document).ready(function(){
             shown_z = "0";
         } else {
             shown_z = "1";
-        } 
+        }
         $("#clear_dead").toggle();
-    });credits();
-    document.onkeydown = function(evt) {
-    evt = evt || window.event;
-    if (evt.keyCode == 74) {
-        playYamete();
-    }
-};
+    }); credits();
+    document.onkeydown = function (evt) {
+        evt = evt || window.event;
+        if (evt.keyCode == 74) {
+            playYamete();
+        }
+    };
 });
 
 
@@ -74,7 +74,7 @@ function checkCards() {
     var line = $("#cards").val();
     var line = line.replace(/^\s*[\r\n]/gm, '');
     $("#cards").val(line);
-    
+
     var apis = $("#api").val();
     var api_selected = $("#api option:selected").text();
     var sk_live = $("#sk").val();
@@ -82,14 +82,14 @@ function checkCards() {
     var tele_msg = $("#tele_msg").val();
     var delay = $("#delay").val();
 
-    if (line.length == 0){
+    if (line.length == 0) {
         $('#Modal').modal('show');
         $('#ModalTitle').text("CC Checker");
         $('#ModalMsg').text("Error: Cards form empty.");
         playError();
         return;
     }
-    if(api_selected.includes("need SK")){
+    if (api_selected.includes("need SK")) {
         if (sk_live.length == 0) {
             $('#Modal').modal('show');
             $('#ModalTitle').text("SK Checker");
@@ -97,7 +97,7 @@ function checkCards() {
             playError();
             return;
         }
-        if (sk_live.indexOf('sk_live')==-1){
+        if (sk_live.indexOf('sk_live') == -1) {
             $('#Modal').modal('show');
             $('#ModalTitle').text("SK Checker");
             $('#ModalMsg').text("Error: Secret Key (SK) provided is invalid.");
@@ -105,52 +105,56 @@ function checkCards() {
             return;
         }
     }
-    if(api_selected.includes("need SK")){
+    if (api_selected.includes("need SK")) {
         var sk_live = $("#sk").val();
-		setCookie('sk_stored', sk_live, '3');
-    }else{
+        setCookie('sk_stored', sk_live, '3');
+    } else {
         var sk_live = "";
     }
 
     var telebot = $("#telebot").val();
 
-    if(telebot.length == 0) {
+    if (telebot.length == 0) {
         var telebot = "";
-    }else{
-    	setCookie('chatID_stored', telebot, '3');
+    } else {
+        setCookie('chatID_stored', telebot, '3');
     }
 
-	playClick();
+    playClick();
     var check_line = line.split("\n");
     var total = check_line.length;
     credits();
-    check_line.forEach(function(value, index) {
+    check_line.forEach(function (value, index) {
         setTimeout(
-            function(){
+            function () {
                 $.ajax({
                     url: apis + '?cc_info=' + value + '&sk=' + sk_live + '&referrer=phccoder&telebot=' + telebot + "&tele_msg=" + tele_msg,
                     type: 'GET',
                     async: true,
-                    success: function(results) {
+                    success: function (results) {
                         var count_live_cvv = (eval(document.getElementById("approved_counter_cvv").innerHTML) + 1);
                         var count_live_ccn = (eval(document.getElementById("approved_counter_ccn").innerHTML) + 1);
                         var count_dead = (eval(document.getElementById("decline_counter").innerHTML) + 1);
                         remove_line();
-                        if(results.match("CVV LIVE")) {
+                        if (results.match("CVV LIVE")) {
                             $("#approved_counter_cvv").text(count_live_cvv);
-                            $.ambiance({message: value,
-                            title: "CVV Live",
-                            timeout: 3,
-                            type: "custom"});
+                            $.ambiance({
+                                message: value,
+                                title: "CVV Live",
+                                timeout: 3,
+                                type: "custom"
+                            });
                             playSuccess();
-                        }else if(results.match("CCN LIVE")){
+                        } else if (results.match("CCN LIVE")) {
                             $("#approved_counter_ccn").text(count_live_ccn);
-                            $.ambiance({message: value,
-                            title: "CCN Live",
-                            timeout: 3,
-                            type: "custom"});
+                            $.ambiance({
+                                message: value,
+                                title: "CCN Live",
+                                timeout: 3,
+                                type: "custom"
+                            });
                             playSuccess();
-                        }else if(results.match("DEAD")){
+                        } else if (results.match("DEAD")) {
                             $("#decline_counter").text(count_dead);
                         }
                         result(results + "");
@@ -161,7 +165,7 @@ function checkCards() {
     });
 }
 
-function checkSK(){
+function checkSK() {
     var sk_live = $("#sk").val();
     if (sk_live.length == 0) {
         $('#Modal').modal('show');
@@ -170,7 +174,7 @@ function checkSK(){
         playError();
         return;
     }
-    if (sk_live.indexOf('sk_live')==-1){
+    if (sk_live.indexOf('sk_live') == -1) {
         $('#Modal').modal('show');
         $('#ModalTitle').text("SK Checker");
         $('#ModalMsg').text("Error: Secret Key (SK) provided is invalid.");
@@ -183,79 +187,79 @@ function checkSK(){
     $('#ModalMsg').text("Initailizing SK Checker Script...");
 
     setTimeout(
-        function(){
+        function () {
             $.ajax({
-            url: 'skcheck.php?sk=' + sk_live + '&referrer=phccoder',
-            type: 'GET',
-            async: true,
-            beforeSend: function () {
-                $('#ModalMsg').text("Checking SK provided...");
-            },
-            success: function(data){
-                if (data.match("LIVE")) {
-                    $('#ModalMsg').text("SK provided is LIVE.");
-                    playSuccess();
-                }else if(data.match("DEAD")){
-                    $('#ModalMsg').text("SK provided is DEAD.");
-                    playError();
+                url: 'skcheck.php?sk=' + sk_live + '&referrer=phccoder',
+                type: 'GET',
+                async: true,
+                beforeSend: function () {
+                    $('#ModalMsg').text("Checking SK provided...");
+                },
+                success: function (data) {
+                    if (data.match("LIVE")) {
+                        $('#ModalMsg').text("SK provided is LIVE.");
+                        playSuccess();
+                    } else if (data.match("DEAD")) {
+                        $('#ModalMsg').text("SK provided is DEAD.");
+                        playError();
+                    }
                 }
-            }
-        });
-    }, 2000);
+            });
+        }, 2000);
 }
-function testBot(){
+function testBot() {
     var telebot = $("#telebot").val();
     if (telebot.length == 0) {
         $('#TeleMsg').text("Error: Chat ID empty.");
-        setTimeout(function(){$('#TeleMsg').text("");},5000);
+        setTimeout(function () { $('#TeleMsg').text(""); }, 5000);
         playError();
         return;
     }
     playClick();
     setTimeout(
-        function(){
+        function () {
             $.ajax({
-            url: 'telebot.php?telebot=' + telebot + '&referrer=phccoder',
-            type: 'GET',
-            async: true,
-            
-            success: function(data){
-                if (data.match("LIVE")) {
-                    $('#ModalMsg').text("SK provided is LIVE.");
-                    playSuccess();
-                }else if(data.match("DEAD")){
-                    $('#ModalMsg').text("SK provided is DEAD.");
-                    playError();
+                url: 'telebot.php?telebot=' + telebot + '&referrer=phccoder',
+                type: 'GET',
+                async: true,
+
+                success: function (data) {
+                    if (data.match("LIVE")) {
+                        $('#ModalMsg').text("SK provided is LIVE.");
+                        playSuccess();
+                    } else if (data.match("DEAD")) {
+                        $('#ModalMsg').text("SK provided is DEAD.");
+                        playError();
+                    }
                 }
-            }
+            });
         });
-    });
 }
 
 
-function modalCCGEN(){
+function modalCCGEN() {
     playClick();
     $('#ccGEN').modal('show');
 }
-function Settings(){
+function Settings() {
     playClick();
     $('#settingsModal').modal('show');
 }
-function copySK(){
+function copySK() {
     playClick();
     var copyText = document.getElementById("sk");
     copyText.select();
     copyText.setSelectionRange(0, 99999)
     document.execCommand("copy");
 }
-function credits(){
-    if(!$("#footer").length){
+function credits() {
+    if (!$("#footer").length) {
         $("#container").append('<div class="footer" id="footer"><center><p style="color: #FFFFFF">phccoder</p></center></div>');
-    }else{
-    	var x = document.getElementById("footer").textContent;
-    	if (x != 'phccoder') {
-    		$("#container").append('<div class="footer" id="footer"><center><p style="color: #FFFFFF">phccoder</p></center></div>');
-    	}
+    } else {
+        var x = document.getElementById("footer").textContent;
+        if (x != 'phccoder') {
+            $("#container").append('<div class="footer" id="footer"><center><p style="color: #FFFFFF">phccoder</p></center></div>');
+        }
     }
 }
 function remove_line() {
@@ -270,7 +274,7 @@ function result(str) {
 function clearCVV() {
     playClick();
     var x = document.getElementsByClassName("live_cvv");
-    for(var i=0; i < x.length; i++){
+    for (var i = 0; i < x.length; i++) {
         x[i].remove();
     }
     var parent = document.getElementById("results");
@@ -280,7 +284,7 @@ function clearCVV() {
 function clearCCN() {
     playClick();
     var y = document.getElementsByClassName("live_ccn");
-    for(var i=0; i < y.length; i++){
+    for (var i = 0; i < y.length; i++) {
         y[i].remove();
     }
     var parent = document.getElementById("results");
@@ -290,7 +294,7 @@ function clearCCN() {
 function clearDead() {
     playClick();
     var z = document.getElementsByClassName("dead");
-    for(var i=0; i < z.length; i++){
+    for (var i = 0; i < z.length; i++) {
         z[i].remove();
     }
     var parent = document.getElementById("results");
@@ -316,30 +320,30 @@ function playSuccess() {
 function onLoadChks() {
     document.getElementById('hidden_div').style.display = $("#api option:selected").text().includes("need SK") ? 'block' : 'none';
 }
-function showDiv(divId, element){
+function showDiv(divId, element) {
     document.getElementById(divId).style.display = $("#api option:selected").text().includes("need SK") ? 'block' : 'none';
 }
-function howto(){
+function howto() {
     playClick();
     $("#howto").toggle();
 }
 function setCookie(cname, cvalue, exdays) {
-	var d = new Date();
-	d.setTime(d.getTime() + (exdays*24*60*60*1000));
-	var expires = "expires="+ d.toUTCString();
-	document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
 }
 
 function ccgen() {
     init();
-    $("#gerar").bind("click", function() {
+    $("#gerar").bind("click", function () {
         darkside(document.console.ccp.value, document.console.tr.value);
     });
-    $("#ccpN").bind("change", function() {
+    $("#ccpN").bind("change", function () {
         fillter();
     });
-    $(document).ready(function() {
-        $("#iniciar").click(function() {
+    $(document).ready(function () {
+        $("#iniciar").click(function () {
             $('#result').fadeIn(2000);
             $(this).attr("disabled", true);
             $("#parar").attr("disabled", false);
@@ -347,7 +351,7 @@ function ccgen() {
             executar = true;
             iniciar();
         });
-        $("#parar").click(function() {
+        $("#parar").click(function () {
             $(this).attr("disabled", true);
             $("#iniciar").attr("disabled", false);
             document.getElementById('cards').disabled = false;
@@ -436,12 +440,12 @@ function darkside(p1, tr) {
     if (p1 != "" && p1 != null) {
         var out = '';
         var jou = 0;
-        
+
         for (var k = 1; k <= ccghm; k++) {
-            if (p1 == 'rnd'){
-            	p = c[Math.floor(Math.random() * (mxcards + 1 - 2)) + 2];
-            }else{
-            	p = p1;
+            if (p1 == 'rnd') {
+                p = c[Math.floor(Math.random() * (mxcards + 1 - 2)) + 2];
+            } else {
+                p = p1;
             }
             var cn = chkCard(p);
             for (var i = tr; i >= 1; i--) {
@@ -486,37 +490,37 @@ function darkside(p1, tr) {
                 } else if (document.console.emeses.value != 'rnd' && document.console.eyear.value != 'rnd') {
                     var mes = document.console.emeses.value;
                     var year = document.console.eyear.value;
-                } else{
-                	var ccexp = '';
+                } else {
+                    var ccexp = '';
                 }
-                
+
 
                 if (document.console.eccv.value == 'rnd') {
                     var binC = cdif.toString();
                     var tipo = parseInt(binC.substring(0, 1));
                     if (tipo == 3) var eccv = (Math.floor(Math.random() * (9998 - 1102 + 1)) + 1102);
                     else var eccv = (Math.floor(Math.random() * (998 - 112 + 1)) + 112);
-                }else if (document.console.eccv.value != 'rnd'){
-                	var eccv = document.console.eccv.value;
-                }else{
-                	var eccv = '';
+                } else if (document.console.eccv.value != 'rnd') {
+                    var eccv = document.console.eccv.value;
+                } else {
+                    var eccv = '';
                 }
 
 
                 if (out != "") {
-					var out = out += "\n";	
+                    var out = out += "\n";
                 }
                 var out = out += cdif;
                 var out = out += "|" + mes + '|' + year;
                 var out = out += "|" + eccv;
             } else {
-            	var out = "Sorry, no valid BIN is inserted, or BIN is incomplete, check if the format is correct, eg 552289xxxxxxxxxx";
+                var out = "Sorry, no valid BIN is inserted, or BIN is incomplete, check if the format is correct, eg 552289xxxxxxxxxx";
             }
         }
         if (jou == 2) var out = out + "</xml>";
         else if (jou == 3) var out = out + "}";
         document.getElementById('cards').value = out;
-        
+
     }
 }
 

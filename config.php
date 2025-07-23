@@ -4,18 +4,18 @@
 //-----------------------------------------------------------------------------------------//
 //Website Basic Informations
 $site_name = 'phccoder';
-$site_icon = 'assets/img/phccoder.png';
+$site_icon = 'assets/img/phccoder.jpg';
 $owner = 'phccoder';
 
 $forceHttps = false; //Highly Recommended if SSL Certificate/HTTPS is available
-$forceAuth = false; //Require Users to input AuthPass
-$AuthPass = 'PHCCODER'; 
-
+$forceAuth = true; //Require Users to input AuthPass
+// $AuthPass = 'PHC-Coder'; 
+$AuthPass_Hashed = '$2y$10$4qxwi.5zyg68xAIDGbPWjeCUuTPiJMxwWhVpPqVp8Q41fq72zX.ou';
 
 //-----------------------------------------------------------------------------------------//
 //Telegram Bot Informations
 $bot_name = "PHC-Coder Bot"; //change this to any bot name you want.
-$bot_token = "6188077264:AAFaIbSeHyokvnXQ84eVtnJCGWWBPHHNd2c"; //change this to your own bot Token.
+$bot_token = "6712628077:AAHHWyk04_vfIcub5wY8RFqJ4XkkFoo5aok"; //change this to your own bot Token.
 $token_url = 'https://api.telegram.org/bot'.$bot_token;
 
 

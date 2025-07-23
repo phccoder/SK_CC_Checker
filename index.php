@@ -1,43 +1,11 @@
 <?php
 //Script Author: phccoder https://t.me/phccoder
-	include 'config.php';
+include 'init.php';
 
-	if ($forceHttps) {
-		if (!(isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https'))	{
-			$redirect = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-			header('HTTP/1.1 301 Moved Permanently');
-			header('Location: ' . $redirect);
-			exit();
-		}
-	}
-
-	if($forceAuth){
-		session_start();
-		if (!isset($_SESSION["Auth"])) { 
-			header("location: ./auth");
-			exit();
-		}
-	}
-	
-	if (!isset($_COOKIE['checker_theme'])) {
-		setcookie('checker_theme', 'dark', time() + (86400 * 30), "/");
-		$theme_background = '#212121';
-		$theme_text = '#FFFFFF';
-		$theme_background_opp = '#FFFFFF';
-		$theme_text_opp = '#000000';
-	}else{
-		if ($_COOKIE['checker_theme'] == 'dark') {
-			$theme_background = '#212121';
-			$theme_text = '#FFFFFF';
-			$theme_background_opp = '#FFFFFF';
-			$theme_text_opp = '#000000';
-		}else{
-			$theme_background = '#FFFFFF';
-			$theme_text = '#000000';
-			$theme_background_opp = '#212121';
-			$theme_text_opp = '#FFFFFF';
-		}
-	}
+if ($forceAuth && !isset($_SESSION["Auth"])) {
+    header("location: ./auth.php");
+    exit();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -241,7 +209,7 @@
 	<div class="modal fade" id="ccGEN" role="dialog" aria-hidden="true" >
 		<div class="modal-dialog modal-dialog-centered"  style="background: transparent;">
 			<div class="modal-content" style="background: transparent;">
-			<div class="modal-header">
+			<div class="modal-header" style="background: <?php echo $theme_background ?>">
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
 				</button>
 			</div>
@@ -325,7 +293,7 @@
 								</div>
 							</div>
 							<div class="row">
-								<button type="button" style="margin-right: 20px;margin-left: 20px;" class="btn btn-outline-danger btn-block"  name="gerar" id="gerar" onclick="playClick();">GENERATE</button>
+								<button type="button" style="margin-top: 20px;" class="btn btn-outline-danger btn-block"  name="gerar" id="gerar" onclick="playClick();">GENERATE</button>
 							</div>
 						</div>
 					</form>
@@ -422,7 +390,7 @@
 					<div name="howto" id="howto">
 						<center >
 							<h5 class="modal-title" id="exampleModalCenterTitle" style="color: <?php echo $theme_text ?>">How To Use:</h5>
-							<h6 style="color: <?php echo $theme_text ?>;">[1] Open our Telegram Bot: <a href="https://t.me/OppaTikoleroBot" target="_blank">@OppaTikoleroBot</a>.
+							<h6 style="color: <?php echo $theme_text ?>;">[1] Open our Telegram Bot: <a href="https://https://t.me/phc_cc_chcker_bot" target="_blank">@phc_cc_chcker_bot</a>.
 
 							</h6>
 							<h6 style="color: <?php echo $theme_text ?>;">[2] Copy-Paste the Chat ID given by the bot.</h6>
@@ -442,6 +410,13 @@
 	<script src="./assets/js/main.js"></script>
 	<script src="./assets/js/jquery.ambiance.js"></script>
 	<script type="text/javascript">
+		$(document).ready(function() {
+			// When any modal on the page is hidden...
+			$('.modal').on('hidden.bs.modal', function () {
+				// Find the close button inside it and remove focus
+				$(this).find('.btn-close').blur();
+			});
+		});
 		function lightmode(){
 			setCookie('checker_theme', 'light', '30');
 			location.reload();
