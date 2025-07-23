@@ -1,5 +1,5 @@
 <?php
-//Script Author: phccoder https://t.me/phccoder
+//Script Author: phccoder https://t.me/PHCC0D3r
 include 'init.php';
 
 if ($forceAuth && !isset($_SESSION["Auth"])) {
@@ -390,7 +390,7 @@ if ($forceAuth && !isset($_SESSION["Auth"])) {
 					<div name="howto" id="howto">
 						<center >
 							<h5 class="modal-title" id="exampleModalCenterTitle" style="color: <?php echo $theme_text ?>">How To Use:</h5>
-							<h6 style="color: <?php echo $theme_text ?>;">[1] Open our Telegram Bot: <a href="https://https://t.me/phc_cc_chcker_bot" target="_blank">@phc_cc_chcker_bot</a>.
+							<h6 style="color: <?php echo $theme_text ?>;">[1] Open our Telegram Bot: <a href="https://t.me/phc_cc_chcker_bot" target="_blank">@phc_cc_chcker_bot</a>.
 
 							</h6>
 							<h6 style="color: <?php echo $theme_text ?>;">[2] Copy-Paste the Chat ID given by the bot.</h6>

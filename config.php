@@ -1,11 +1,11 @@
 <?php
-//Script Author: phccoder https://t.me/phccoder
+//Script Author: phccoder https://t.me/PHCC0D3r
 
 //-----------------------------------------------------------------------------------------//
 //Website Basic Informations
-$site_name = 'phccoder';
+$site_name = 'PHCC0D3r';
 $site_icon = 'assets/img/phccoder.jpg';
-$owner = 'phccoder';
+$owner = 'PHCC0D3r';
 
 $forceHttps = false; //Highly Recommended if SSL Certificate/HTTPS is available
 $forceAuth = true; //Require Users to input AuthPass

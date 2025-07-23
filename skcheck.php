@@ -1,5 +1,5 @@
 <?php
-//Script Author: phccoder https://t.me/phccoder
+//Script Author: phccoder https://t.me/PHCC0D3r
 
 /*===[PHP Setup]==============================================*/
 error_reporting(0);

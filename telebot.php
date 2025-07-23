@@ -21,7 +21,7 @@ $keyboard = array(
 			array("text" => "Visit phccoder Checker", "url" => "https://phccoder.ml/")
 		),
 		array(
-			array("text" => "Contact phccoder", "url" => "https://t.me/phccoder")
+			array("text" => "Contact phccoder", "url" => "https://t.me/PHCC0D3r")
 		)
 	)
 );
