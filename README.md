@@ -12,19 +12,41 @@ A web-based tool designed for checking the validity of Stripe Secret Keys (SK) a
 * **Authentication**: Secure your checker with a simple, hash-based password system.
 * **CC Generator**: Includes a built-in credit card generator for creating test numbers based on a BIN.
 * **Telegram Integration**: Get instant notifications for valid (CVV/CCN) results forwarded to your Telegram chat via a bot.
-* **Theming**: Switch between a sleek dark mode and a clean light mode to suit your preference.
-* **Modern UI**: A clean, responsive interface built with Bootstrap 5.
+* **Glassmorphism UI**: A fully responsive, mobile-friendly design with frosted-glass cards, animated gradient background, and custom glass toasts.
+* **No Page-Reload Theme Toggle**: Switch between dark (default) and light modes instantly with a floating toggle button — persisted in `localStorage`.
+* **Live Result Filtering**: Tap the CVV / CCN / DEAD counter pills to show or hide each result category; per-category clear buttons included.
+* **No XAMPP Required**: Runs on PHP's built-in web server via a one-click `serve.ps1` launcher.
 
 ---
 
 ## 🚀 Setup and Installation
 
-To run this checker on your local machine, you will need a web server environment like XAMPP.
+No XAMPP required — this project runs on **PHP's built-in web server** (PHP itself is still needed; a standalone lightweight PHP install works fine).
 
-1.  **Install XAMPP**: Download and install XAMPP from the [official website](https://www.apachefriends.org/index.html).
-2.  **Move Project Files**: Place the entire `SK_CC_Checker` folder inside the `htdocs` directory (usually located at `C:\xampp\htdocs\`).
-3.  **Start Apache**: Open the XAMPP Control Panel and start the **Apache** service.
-4.  **Access the Checker**: Open your web browser and navigate to `http://localhost/SK_CC_Checker/`.
+1.  **Install PHP (standalone, no XAMPP)**:
+    Download the latest Windows thread-safe ZIP from [windows.php.net](https://windows.php.net/download/), extract it, and add the folder containing `php.exe` to your system PATH (or set `$phpPath` in `serve.ps1`).
+    > Make sure the `curl` and `openssl` extensions are enabled in your `php.ini` (the built-in server needs them to reach the Stripe API).
+2.  **Start the app** (one click):
+    ```powershell
+    .\serve.ps1
+    ```
+    This launches the built-in web server at `http://localhost:8080`.
+3.  **Access the Checker**: Open your browser and navigate to `http://localhost:8080`.
+    (Change the port with `.\serve.ps1 -Port 9090` if needed.)
+
+> Prefer XAMPP/WAMP? Just drop the folder into `htdocs` and open `http://localhost/SK_CC_Checker/` — no changes needed.
+
+---
+
+## 💻 Using the Checker
+
+1.  **Cards input**: Paste your card list into the textarea, one card per line in `NUMBER|MM|YYYY|CVV` format.
+2.  **API**: Pick one of the four Stripe API configurations from the dropdown. APIs marked `[need SK]` reveal the **Secret Key (SK)** field.
+3.  **Secret Key**: Paste your `sk_live_...` key. Use the copy button to copy it to your clipboard, or **CHECK SK** to validate the key itself.
+4.  **CHECK CARDS**: Starts checking each card line with a configurable delay. Live cards pop a glass toast; counters (CVV / CCN / DEAD) update live in the stats bar.
+5.  **CC Gen**: Opens the generator modal — enter a BIN, choose month/year/quantity, and generate valid-format test numbers.
+6.  **Settings (gear icon)**: Configure the Telegram forwarder (Chat ID + message type) and the per-card check delay.
+7.  **Theme**: Use the floating ☀/☾ button to toggle dark and light glass themes instantly.
 
 ---
 
@@ -64,6 +86,24 @@ To receive live results on Telegram:
     ```
 3.  **Get Your Chat ID**: Start a chat with your new bot and then visit `https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates` (replace `<YOUR_BOT_TOKEN>` with your actual token). Find your chat ID in the response.
 4.  **Use in Checker**: Enter this Chat ID in the "Settings" modal of the checker to start receiving notifications.
+
+---
+
+## 🗂️ Project Structure
+
+| File | Purpose |
+|------|---------|
+| `index.php` | Main checker interface (glassmorphism UI) |
+| `auth.php` | Login page when `$forceAuth` is enabled |
+| `config.php` | All settings (auth, Telegram, API list, bug bins) |
+| `init.php` | Session / HTTPS bootstrap |
+| `preset.php` | Shared request parsing + validation for the Stripe API files |
+| `skcheck.php` | Standalone SK validity checker |
+| `Stripe_1..4_New.php` | The four Stripe API checking flows |
+| `telebot.php` | Telegram forwarder test endpoint |
+| `serve.ps1` | One-click PHP built-in server launcher (no XAMPP) |
+| `assets/css/style.css` | All glassmorphism styling + theme variables |
+| `assets/js/main.js` | Checker logic, CC generator, toasts, theme toggle |
 
 ---
 

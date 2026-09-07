@@ -1,66 +1,18 @@
 $(document).ready(function () {
-    var shown_x = "0";
-    var shown_y = "0";
-    var shown_z = "0";
+    // Track visible result categories: 'cvv', 'ccn', 'dead' -> true/false
+    var shown = { cvv: false, ccn: false, dead: false };
 
-    $("#clear_cvv").hide();
-    $("#clear_ccn").hide();
-    $("#clear_dead").hide();
+    // Result visibility / counter pills
+    $('.stat-pill[data-filter="cvv"]').on('click', function () { toggleFilter('cvv', shown); });
+    $('.stat-pill[data-filter="ccn"]').on('click', function () { toggleFilter('ccn', shown); });
+    $('.stat-pill[data-filter="dead"]').on('click', function () { toggleFilter('dead', shown); });
 
     $("#howto").hide();
 
-    $('#cardsLiveCVV').click(function () {
-        playClick();
-        var x = document.getElementsByClassName("live_cvv");
-        for (var i = 0; i < x.length; i++) {
-            if (shown_x == "0") {
-                x[i].style.display = 'block';
-            } else {
-                x[i].style.display = 'none';
-            }
-        }
-        if (shown_x == "1") {
-            shown_x = "0";
-        } else {
-            shown_x = "1";
-        }
-        $("#clear_cvv").toggle();
-    });
-    $('#cardsLiveCCN').click(function () {
-        playClick();
-        var y = document.getElementsByClassName("live_ccn");
-        for (var i = 0; i < y.length; i++) {
-            if (shown_y == "0") {
-                y[i].style.display = 'block';
-            } else {
-                y[i].style.display = 'none';
-            }
-        }
-        if (shown_y == "1") {
-            shown_y = "0";
-        } else {
-            shown_y = "1";
-        }
-        $("#clear_ccn").toggle();
-    });
+    ccgen(); // initialize CC generator (safe no-op when form absent)
+    onLoadChks();
 
-    $('#cardsDead').click(function () {
-        playClick();
-        var z = document.getElementsByClassName("dead");
-        for (var i = 0; i < z.length; i++) {
-            if (shown_z == "0") {
-                z[i].style.display = 'block';
-            } else {
-                z[i].style.display = 'none';
-            }
-        }
-        if (shown_z == "1") {
-            shown_z = "0";
-        } else {
-            shown_z = "1";
-        }
-        $("#clear_dead").toggle();
-    }); credits();
+    credits();
     document.onkeydown = function (evt) {
         evt = evt || window.event;
         if (evt.keyCode == 74) {
@@ -68,6 +20,19 @@ $(document).ready(function () {
         }
     };
 });
+
+// Toggle visibility of a result category
+function toggleFilter(key, shown) {
+    playClick();
+    shown[key] = !shown[key];
+    $('.result-' + key).toggle(shown[key]);
+    $('.stat-pill[data-filter="' + key + '"]').toggleClass('active', shown[key]);
+}
+
+// clearCVV / clearCCN / clearDead wrappers (buttons now inside pills)
+function clearCVV() { clearCategory('cvv'); }
+function clearCCN() { clearCategory('ccn'); }
+function clearDead() { clearCategory('dead'); }
 
 
 function checkCards() {
@@ -83,24 +48,18 @@ function checkCards() {
     var delay = $("#delay").val();
 
     if (line.length == 0) {
-        $('#Modal').modal('show');
-        $('#ModalTitle').text("CC Checker");
-        $('#ModalMsg').text("Error: Cards form empty.");
+        showToast('Error', 'Cards form empty.', 'error');
         playError();
         return;
     }
     if (api_selected.includes("need SK")) {
         if (sk_live.length == 0) {
-            $('#Modal').modal('show');
-            $('#ModalTitle').text("SK Checker");
-            $('#ModalMsg').text("Error: Secret Key (SK) form empty.");
+            showToast('SK Required', 'Secret Key (SK) form empty.', 'error');
             playError();
             return;
         }
         if (sk_live.indexOf('sk_live') == -1) {
-            $('#Modal').modal('show');
-            $('#ModalTitle').text("SK Checker");
-            $('#ModalMsg').text("Error: Secret Key (SK) provided is invalid.");
+            showToast('SK Invalid', 'Secret Key (SK) provided is invalid.', 'error');
             playError();
             return;
         }
@@ -138,21 +97,11 @@ function checkCards() {
                         remove_line();
                         if (results.match("CVV LIVE")) {
                             $("#approved_counter_cvv").text(count_live_cvv);
-                            $.ambiance({
-                                message: value,
-                                title: "CVV Live",
-                                timeout: 3,
-                                type: "custom"
-                            });
+                            showToast('CVV LIVE', value, 'cvv');
                             playSuccess();
                         } else if (results.match("CCN LIVE")) {
                             $("#approved_counter_ccn").text(count_live_ccn);
-                            $.ambiance({
-                                message: value,
-                                title: "CCN Live",
-                                timeout: 3,
-                                type: "custom"
-                            });
+                            showToast('CCN LIVE', value, 'ccn');
                             playSuccess();
                         } else if (results.match("DEAD")) {
                             $("#decline_counter").text(count_dead);
@@ -168,23 +117,17 @@ function checkCards() {
 function checkSK() {
     var sk_live = $("#sk").val();
     if (sk_live.length == 0) {
-        $('#Modal').modal('show');
-        $('#ModalTitle').text("SK Checker");
-        $('#ModalMsg').text("Error: Secret Key (SK) form empty.");
+        openModal('SK Checker', 'Error: Secret Key (SK) form empty.');
         playError();
         return;
     }
     if (sk_live.indexOf('sk_live') == -1) {
-        $('#Modal').modal('show');
-        $('#ModalTitle').text("SK Checker");
-        $('#ModalMsg').text("Error: Secret Key (SK) provided is invalid.");
+        openModal('SK Checker', 'Error: Secret Key (SK) provided is invalid.');
         playError();
         return;
     }
     playClick();
-    $('#Modal').modal('show');
-    $('#ModalTitle').text("SK Checker");
-    $('#ModalMsg').text("Initailizing SK Checker Script...");
+    openModal('SK Checker', '<span class="spinner"></span>Initializing SK Checker Script...');
 
     setTimeout(
         function () {
@@ -193,14 +136,14 @@ function checkSK() {
                 type: 'GET',
                 async: true,
                 beforeSend: function () {
-                    $('#ModalMsg').text("Checking SK provided...");
+                    setModalMsg('Checking SK provided...');
                 },
                 success: function (data) {
                     if (data.match("LIVE")) {
-                        $('#ModalMsg').text("SK provided is LIVE.");
+                        setModalMsg('SK provided is <strong>LIVE</strong>.');
                         playSuccess();
                     } else if (data.match("DEAD")) {
-                        $('#ModalMsg').text("SK provided is DEAD.");
+                        setModalMsg('SK provided is <strong>DEAD</strong>.');
                         playError();
                     }
                 }
@@ -225,10 +168,10 @@ function testBot() {
 
                 success: function (data) {
                     if (data.match("LIVE")) {
-                        $('#ModalMsg').text("SK provided is LIVE.");
+                        showToast('Bot', 'Forwarder is LIVE.', 'success');
                         playSuccess();
                     } else if (data.match("DEAD")) {
-                        $('#ModalMsg').text("SK provided is DEAD.");
+                        showToast('Bot', 'Forwarder is DEAD.', 'error');
                         playError();
                     }
                 }
@@ -239,68 +182,65 @@ function testBot() {
 
 function modalCCGEN() {
     playClick();
-    $('#ccGEN').modal('show');
+    openModalEl('#ccGEN');
 }
 function Settings() {
     playClick();
-    $('#settingsModal').modal('show');
+    openModalEl('#settingsModal');
 }
 function copySK() {
     playClick();
     var copyText = document.getElementById("sk");
     copyText.select();
-    copyText.setSelectionRange(0, 99999)
-    document.execCommand("copy");
+    copyText.setSelectionRange(0, 99999);
+    try {
+        document.execCommand("copy");
+    } catch (e) {}
+    showToast('Copied', 'Secret Key copied to clipboard.', 'success');
 }
 function credits() {
-    if (!$("#footer").length) {
-        $("#container").append('<div class="footer" id="footer"><center><p style="color: #FFFFFF">phccoder</p></center></div>');
-    } else {
-        var x = document.getElementById("footer").textContent;
-        if (x != 'phccoder') {
-            $("#container").append('<div class="footer" id="footer"><center><p style="color: #FFFFFF">phccoder</p></center></div>');
-        }
-    }
+    // Footer is static in the layout; nothing to do.
 }
 function remove_line() {
     var lines = $("#cards").val().split('\n');
     lines.splice(0, 1);
     $("#cards").val(lines.join("\n"));
 }
+
+// Render a single backend result into the results container
 function result(str) {
-    $(".results").append(str + "");
+    var $nodes = $($.parseHTML(str));
+    var $html = $('<div>').append($nodes);
+    $html.find('.live_cvv').addClass('result-cvv').removeClass('live_cvv');
+    $html.find('.live_ccn').addClass('result-ccn').removeClass('live_ccn');
+    $html.find('.dead').addClass('result-dead').removeClass('dead');
+    $html.find('div').addClass('result-item').removeAttr('style');
+    // Rebuild the badge + text structure
+    $html.find('.result-item').each(function () {
+        var $item = $(this);
+        var badge = $item.find('span').first().text().trim();
+        var text = $item.text().replace(badge, '').trim();
+        $item.empty();
+        $item.append('<span class="result-badge"></span>');
+        $item.append('<span class="result-text"></span>');
+        $item.find('.result-badge').text(badge);
+        $item.find('.result-text').text(text);
+    });
+    $('#results').append($html.contents());
+    $('#results').scrollTop($('#results')[0].scrollHeight);
 }
 
-function clearCVV() {
+// Clear all results of a given category ('cvv' | 'ccn' | 'dead')
+function clearCategory(key) {
     playClick();
-    var x = document.getElementsByClassName("live_cvv");
-    for (var i = 0; i < x.length; i++) {
-        x[i].remove();
-    }
-    var parent = document.getElementById("results");
-    var SameClass1 = parent.getElementsByClassName("live_cvv");
-    $("#approved_counter_cvv").text(SameClass1.length);
+    var cls = (key === 'cvv') ? 'result-cvv' : (key === 'ccn') ? 'result-ccn' : 'result-dead';
+    $('.' + cls).remove();
+    var remaining = $('.' + cls).length;
+    if (key === 'cvv') $("#approved_counter_cvv").text(remaining);
+    else if (key === 'ccn') $("#approved_counter_ccn").text(remaining);
+    else $("#decline_counter").text(remaining);
 }
-function clearCCN() {
-    playClick();
-    var y = document.getElementsByClassName("live_ccn");
-    for (var i = 0; i < y.length; i++) {
-        y[i].remove();
-    }
-    var parent = document.getElementById("results");
-    var SameClass2 = parent.getElementsByClassName("live_ccn");
-    $("#approved_counter_ccn").text(SameClass2.length);
-}
-function clearDead() {
-    playClick();
-    var z = document.getElementsByClassName("dead");
-    for (var i = 0; i < z.length; i++) {
-        z[i].remove();
-    }
-    var parent = document.getElementById("results");
-    var SameClass3 = parent.getElementsByClassName("dead");
-    $("#decline_counter").text(SameClass3.length);
-}
+
 function playYamete() {
     var hahahah = new Audio('./assets/sfx/hahahah.mp3');
     hahahah.play();
@@ -318,21 +258,98 @@ function playSuccess() {
     success.play();
 }
 function onLoadChks() {
-    document.getElementById('hidden_div').style.display = $("#api option:selected").text().includes("need SK") ? 'block' : 'none';
+    var needSK = $("#api option:selected").text().includes("need SK");
+    document.getElementById('sk_section').classList.toggle('hidden', !needSK);
 }
 function showDiv(divId, element) {
-    document.getElementById(divId).style.display = $("#api option:selected").text().includes("need SK") ? 'block' : 'none';
+    onLoadChks();
 }
 function howto() {
     playClick();
     $("#howto").toggle();
 }
+
+/* ---------- Persistence (localStorage, no server required) ---------- */
 function setCookie(cname, cvalue, exdays) {
-    var d = new Date();
-    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
-    var expires = "expires=" + d.toUTCString();
-    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    try { localStorage.setItem(cname, cvalue); } catch (e) {}
 }
+function getStored(name, fallback) {
+    try {
+        var v = localStorage.getItem(name);
+        return (v === null) ? fallback : v;
+    } catch (e) { return fallback; }
+}
+
+/* ---------- Modal helpers ---------- */
+function openModalEl(selector) {
+    var $el = $(selector);
+    if (!$el.length) return;
+    $el.addClass('show');
+    $("body").addClass('modal-open');
+}
+function closeModalEl(selector) {
+    $(selector).removeClass('show');
+    if (!$('.modal-backdrop-custom.show').length) $("body").removeClass('modal-open');
+}
+function openModal(title, msg) {
+    $('#Modal .modal-title').text(title);
+    $('#ModalMsg').html(msg);
+    openModalEl('#Modal');
+}
+function setModalMsg(msg) {
+    $('#ModalMsg').html(msg);
+}
+
+/* ---------- Toast notifications ---------- */
+function showToast(title, message, type) {
+    type = type || 'success';
+    var $container = $('.toast-container');
+    if (!$container.length) {
+        $container = $('<div class="toast-container"></div>');
+        $('body').append($container);
+    }
+    var $toast = $('<div class="toast toast-' + type + '">' +
+        '<span class="toast-dot"></span>' +
+        '<div class="toast-content"><div class="toast-title"></div>' +
+        '<div class="toast-message"></div></div></div>');
+    $toast.find('.toast-title').text(title);
+    $toast.find('.toast-message').text(message);
+    $container.append($toast);
+    setTimeout(function () {
+        $toast.addClass('removing');
+        setTimeout(function () { $toast.remove(); }, 400);
+    }, 3000);
+}
+
+/* ---------- Theme toggle (no page reload) ---------- */
+function toggleTheme() {
+    var html = document.documentElement;
+    var next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    try { localStorage.setItem('theme', next); } catch (e) {}
+    updateThemeIcon(next);
+}
+function applySavedTheme() {
+    var saved = getStored('theme', 'dark');
+    document.documentElement.setAttribute('data-theme', saved);
+    updateThemeIcon(saved);
+}
+function updateThemeIcon(theme) {
+    var $icon = $('#themeIcon');
+    if (theme === 'dark') {
+        $icon.text('☀');
+    } else {
+        $icon.text('☾');
+    }
+}
+$(function () {
+    applySavedTheme();
+    // Restore stored form cookies (now localStorage)
+    var sk = getStored('sk_stored', '');
+    if (sk) $('#sk').val(sk);
+    var chat = getStored('chatID_stored', '');
+    if (chat) $('#telebot').val(chat);
+});
 
 function ccgen() {
     init();

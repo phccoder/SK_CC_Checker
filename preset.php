@@ -13,87 +13,92 @@ if ($forceAuth && !isset($_SESSION["Auth"])) {
 }
 
 /*===[Variable Setup]=========================================*/
-// OLD CODE:
-// $cc_info = $_GET['cc_info'];
-// $sk = $_GET['sk'];
-
-// NEW SECURE CODE:
-$cc_info = $_POST['cc_info'];
-$sk = $_POST['sk'];
-$telebot = $_GET['telebot'];
-$tele_msg = $_GET['tele_msg'];
-if ($_COOKIE['checker_theme'] == 'dark') {
-    $theme_background = '#212121';
-    $theme_text = '#FFFFFF';
-}else{
-    $theme_background = '#FFFFFF';
-    $theme_text = '#000000';
-}
+// Parameters arrive via the AJAX query string (GET).
+$cc_info = isset($_GET['cc_info']) ? $_GET['cc_info'] : '';
+$sk = isset($_GET['sk']) ? $_GET['sk'] : '';
+$telebot = isset($_GET['telebot']) ? $_GET['telebot'] : '';
+$tele_msg = isset($_GET['tele_msg']) ? $_GET['tele_msg'] : '';
 
 /*===[CC Info Validation]=====================================*/
 if (!$testMode) {
-    if($cc_info == "" || $sk == ""){
+    if ($cc_info == "" || $sk == "") {
         exit();
     }
-    $j=0;
-    // OLD
-    // while ($j < (sizeof($bug_bin) - 1)) {
+}
+
+/*===[BugBin Exclusion]=======================================*/
+if (!$testMode) {
+    $j = 0;
     while ($j < count($bug_bin)) {
         if (substr($cc_info, 0, strlen($bug_bin[$j])) === $bug_bin[$j]) {
-            EchoMessage('DEAD',$cc_info.' >> BUG BIN Not Accepted for checking...');
+            EchoMessage('DEAD', $cc_info . ' >> BUG BIN Not Accepted for checking...');
             exit();
-            break;
         }
         $j++;
     }
 }
 
-
 /*===[Variable Setup]=========================================*/
 $i = explode("|", $cc_info);
-$cc = $i[0];
-$mm = $i[1];
-$yyyy = $i[2];
+if (count($i) < 4) {
+    EchoMessage('DEAD', $cc_info . ' >> Invalid card format. Use: NUMBER|MM|YYYY|CVV');
+    exit();
+}
+$cc = trim($i[0]);
+$mm = trim($i[1]);
+$yyyy = trim($i[2]);
 $yy = substr($yyyy, 2, 4);
-$cvv = $i[3];
+$cvv = trim($i[3]);
 $bin = substr($cc, 0, 8);
 $last4 = substr($cc, 12, 16);
 $email = urlencode(emailGenerate());
 $m = ltrim($mm, "0");
 
+if (!preg_match('/^\d{6,19}$/', $cc) || !preg_match('/^\d{2}$/', $mm) || !preg_match('/^\d{4}$/', $yyyy) || !preg_match('/^\d{3,4}$/', $cvv)) {
+    EchoMessage('DEAD', $cc_info . ' >> Invalid card format. Use: NUMBER|MM|YYYY|CVV');
+    exit();
+}
+
 /*===[Identity Setup]=========================================*/
-$get = file_get_contents('https://randomuser.me/api/1.2/?nat=us');
-$infos = json_decode($get, 1);
-$name_first = $infos['results'][0]['name']['first'];
-$name_last = $infos['results'][0]['name']['last'];
-$name_full = ''.$name_first.' '.$name_last.'';
+// Try the public randomuser API but fall back to local data so checks
+// never break when the API is unreachable.
+$location_street = '123 Main St';
+$location_city = 'Lexington';
+$location_state = 'KY';
+$location_postcode = '40502';
+$name_full = 'John Doe';
 
-$location_street = $infos['results'][0]['location']['street'];
-$location_city = $infos['results'][0]['location']['city'];
-$location_state = $infos['results'][0]['location']['state'];
-$location_postcode = $infos['results'][0]['location']['postcode'];
-$state_map = [
-    "alabama" => "AL", "alaska" => "AK", "arizona" => "AZ",
-    "arkansas" => "AR", "california" => "CA", "colorado" => "CO",
-    "connecticut" => "CT", "delaware" => "DE", "florida" => "FL",
-    "georgia" => "GA", "hawaii" => "HI", "idaho" => "ID",
-    "illinois" => "IL", "indiana" => "IN", "iowa" => "IA",
-    "kansas" => "KS", "kentucky" => "KY", "louisiana" => "LA",
-    "maine" => "ME", "maryland" => "MD", "massachusetts" => "MA",
-    "michigan" => "MI", "minnesota" => "MN", "mississippi" => "MS",
-    "missouri" => "MO", "montana" => "MT", "nebraska" => "NE",
-    "nevada" => "NV", "new hampshire" => "NH", "new jersey" => "NJ",
-    "new mexico" => "NM", "new york" => "NY", "north carolina" => "NC",
-    "north dakota" => "ND", "ohio" => "OH", "oklahoma" => "OK",
-    "oregon" => "OR", "pennsylvania" => "PA", "rhode island" => "RI",
-    "south carolina" => "SC", "south dakota" => "SD", "tennessee" => "TN",
-    "texas" => "TX", "utah" => "UT", "vermont" => "VT",
-    "virginia" => "VA", "washington" => "WA", "west virginia" => "WV",
-    "wisconsin" => "WI", "wyoming" => "WY"
-];
-
-$location_state_lower = strtolower($infos['results'][0]['location']['state']);
-$location_state = $state_map[$location_state_lower] ?? 'KY'; // Default to KY if not found
+$get = @file_get_contents('https://randomuser.me/api/1.2/?nat=us', false, stream_context_create(['http' => ['timeout' => 4]]));
+$infos = json_decode($get, true);
+if (is_array($infos) && isset($infos['results'][0]['name']['first'])) {
+    $name_first = $infos['results'][0]['name']['first'];
+    $name_last = $infos['results'][0]['name']['last'];
+    $name_full = $name_first . ' ' . $name_last;
+    $location_street = $infos['results'][0]['location']['street'];
+    $location_city = $infos['results'][0]['location']['city'];
+    $location_postcode = $infos['results'][0]['location']['postcode'];
+    $state_map = [
+        "alabama" => "AL", "alaska" => "AK", "arizona" => "AZ",
+        "arkansas" => "AR", "california" => "CA", "colorado" => "CO",
+        "connecticut" => "CT", "delaware" => "DE", "florida" => "FL",
+        "georgia" => "GA", "hawaii" => "HI", "idaho" => "ID",
+        "illinois" => "IL", "indiana" => "IN", "iowa" => "IA",
+        "kansas" => "KS", "kentucky" => "KY", "louisiana" => "LA",
+        "maine" => "ME", "maryland" => "MD", "massachusetts" => "MA",
+        "michigan" => "MI", "minnesota" => "MN", "mississippi" => "MS",
+        "missouri" => "MO", "montana" => "MT", "nebraska" => "NE",
+        "nevada" => "NV", "new hampshire" => "NH", "new jersey" => "NJ",
+        "new mexico" => "NM", "new york" => "NY", "north carolina" => "NC",
+        "north dakota" => "ND", "ohio" => "OH", "oklahoma" => "OK",
+        "oregon" => "OR", "pennsylvania" => "PA", "rhode island" => "RI",
+        "south carolina" => "SC", "south dakota" => "SD", "tennessee" => "TN",
+        "texas" => "TX", "utah" => "UT", "vermont" => "VT",
+        "virginia" => "VA", "washington" => "WA", "west virginia" => "WV",
+        "wisconsin" => "WI", "wyoming" => "WY"
+    ];
+    $location_state_lower = strtolower($infos['results'][0]['location']['state']);
+    $location_state = $state_map[$location_state_lower] ?? 'KY';
+}
 
 
 /*===[PHP Functions]==========================================*/
@@ -110,31 +115,19 @@ function emailGenerate($length = 10) {
     }
     return $randomString.'@gmail.com';
 }
-function EchoMessage($CardStatus,$CardMessage){
+function EchoMessage($CardStatus, $CardMessage) {
     $MessageStructure = '';
     switch ($CardStatus) {
         case 'CVV LIVE':
-            echo $MessageStructure = '
-                <div class="live_cvv" style="display:none;">
-                    <span class="badge badge-primary">'.$CardStatus.'</span>
-                    <span style="color: '.$GLOBALS['theme_text'].'"> '.$CardMessage.'</span>
-                </div>';
+            echo '<div class="live_cvv" style="display:none;"><span class="badge">CVV LIVE</span><span> '.$CardMessage.'</span></div>';
             break;
         case 'CCN LIVE':
-            echo $MessageStructure = '
-                <div class="live_ccn" style="display:none;">
-                    <span class="badge badge-warning">'.$CardStatus.'</span>
-                    <span style="color: '.$GLOBALS['theme_text'].'"> '.$CardMessage.'</span>
-                </div>';
+            echo '<div class="live_ccn" style="display:none;"><span class="badge">CCN LIVE</span><span> '.$CardMessage.'</span></div>';
             break;
         case 'DEAD':
-            echo $MessageStructure = '
-                <div class="dead" style="display:none;">
-                    <span class="badge badge-danger">'.$CardStatus.'</span>
-                    <span style="color: '.$GLOBALS['theme_text'].'"> '.$CardMessage.'</span>
-                </div>';
+            echo '<div class="dead" style="display:none;"><span class="badge">DEAD</span><span> '.$CardMessage.'</span></div>';
             break;
-    } 
+    }
 }
 
 ?>

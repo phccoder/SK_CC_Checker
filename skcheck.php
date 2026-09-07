@@ -9,7 +9,7 @@ ini_set('display_errors', 0);
 include './config.php';
 
 /*===[Variable Setup]=========================================*/
-$sk = $_POST['sk'];
+$sk = isset($_GET['sk']) ? $_GET['sk'] : '';
 
 /*===[SK Info Validation]=====================================*/
 if($sk == ""){

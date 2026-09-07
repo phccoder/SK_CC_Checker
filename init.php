@@ -22,18 +22,4 @@ if (php_sapi_name() !== 'cli') {
     }
     
 }
-
-// Theme Logic (no changes needed)
-$theme_cookie = $_COOKIE['checker_theme'] ?? 'dark';
-if ($theme_cookie === 'dark') {
-    $theme_background = '#212121';
-    $theme_text = '#FFFFFF';
-    $theme_background_opp = '#FFFFFF';
-    $theme_text_opp = '#000000';
-} else {
-    $theme_background = '#FFFFFF';
-    $theme_text = '#000000';
-    $theme_background_opp = '#212121';
-    $theme_text_opp = '#FFFFFF';
-}
 ?>
