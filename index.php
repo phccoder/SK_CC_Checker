@@ -97,6 +97,18 @@ if ($forceAuth && !isset($_SESSION["Auth"])) {
 			<!-- Results -->
 			<section class="glass-section">
 				<span class="section-label">Results</span>
+				<div class="results-header">
+					<div class="run-status">
+						<span class="run-dot idle" id="runDot"></span>
+						<span id="runStatus">Idle</span>
+						<span id="runPending" class="run-pending"></span>
+					</div>
+					<div class="results-actions">
+						<button type="button" class="btn btn-glass btn-sm" id="pauseBtn" disabled>Pause</button>
+						<button type="button" class="btn btn-glass btn-sm" id="sortBtn">▲ Newest</button>
+						<button type="button" class="btn btn-glass btn-sm" id="clearAllBtn">Clear all</button>
+					</div>
+				</div>
 				<div class="results-container" id="results"></div>
 			</section>
 

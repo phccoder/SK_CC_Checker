@@ -8,58 +8,41 @@ ini_set('display_errors', 0);
 /*===[Include Setup]==========================================*/
 include 'preset.php';
 
-/*===[cURL Processes]=========================================*/
-/* 1st cURL */
-$ch1 = curl_init();
-curl_setopt($ch1, CURLOPT_URL, 'https://api.stripe.com/v1/customers');
-curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch1, CURLOPT_POSTFIELDS, 'email='.$email.'&description=phccoder&address[line1]='.$location_street.'&address[city]='.$location_city.'&address[state]='.$location_state.'&address[postal_code]='.$location_postcode.'&address[country]=US');
-curl_setopt($ch1, CURLOPT_USERPWD, $sk. ':' . '');
-$headers = array();
-$headers[] = 'Content-Type: application/x-www-form-urlencoded';
-curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-$curl1 = curl_exec($ch1);
-curl_close($ch1);
+/*===[HTTP Processes]=========================================*/
+/* 1st Request */
+$resp1 = http_request('https://api.stripe.com/v1/customers', 'POST', 'email='.$email.'&description=phccoder&address[line1]='.$location_street.'&address[city]='.$location_city.'&address[state]='.$location_state.'&address[postal_code]='.$location_postcode.'&address[country]=US', $sk. ':');
+$curl1 = $resp1['body'];
+if ($resp1['errno'] || $curl1 === false) {
+    phc_log('stripe4', '1st request failed errno='.$resp1['errno'].' http='.$resp1['code']);
+}
 
-/* 1st cURL Response */
+/* 1st Request Response */
 $res1 = json_decode($curl1, 1);
 $cus = $res1['id'];
 
 if(isset($res1['id'])){
-    /* 2nd cURL */
-    $ch2 = curl_init();
-    curl_setopt($ch2, CURLOPT_URL, 'https://api.stripe.com/v1/setup_intents');
-    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch2, CURLOPT_POST, 1);
-    curl_setopt($ch2, CURLOPT_POSTFIELDS, 'payment_method_data[type]=card&customer='.$res1["id"].'&payment_method_data[card][number]='.$cc.'&payment_method_data[card][exp_month]='.$mm.'&payment_method_data[card][exp_year]='.$yyyy.'&payment_method_data[card][cvc]='.$cvv.'&usage=off_session');
-    curl_setopt($ch2, CURLOPT_USERPWD, $sk . ':' . '');
-    $headers = array();
-    $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-    curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
-    $curl2 = curl_exec($ch2);
-    curl_close($ch2);
+    /* 2nd Request */
+    $resp2 = http_request('https://api.stripe.com/v1/setup_intents', 'POST', 'payment_method_data[type]=card&customer='.$res1["id"].'&payment_method_data[card][number]='.$cc.'&payment_method_data[card][exp_month]='.$mm.'&payment_method_data[card][exp_year]='.$yyyy.'&payment_method_data[card][cvc]='.$cvv.'&usage=off_session', $sk . ':');
+    $curl2 = $resp2['body'];
+    if ($resp2['errno'] || $curl2 === false) {
+        phc_log('stripe4', '2nd request failed errno='.$resp2['errno'].' http='.$resp2['code']);
+    }
 
-    /* 2nd cURL Response */
+    /* 2nd Request Response */
     $res2 = json_decode($curl2, 1);
     $seti = $res2['id'];
 
 }
 
 if(isset($res2['id'])){
-    /* 3rd cURL */
-    $ch3 = curl_init();
-    curl_setopt($ch3, CURLOPT_URL, 'https://api.stripe.com/v1/payment_methods/'.$res2["payment_method"].'/attach');
-    curl_setopt($ch3, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch3, CURLOPT_POST, 1);
-    curl_setopt($ch3, CURLOPT_POSTFIELDS, 'customer='.$res1['id'].'');
-    curl_setopt($ch3, CURLOPT_USERPWD, $sk . ':' . '');
-    $headers = array();
-    $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-    curl_setopt($ch3, CURLOPT_HTTPHEADER, $headers);
-    $curl3 = curl_exec($ch3);
-    curl_close($ch3);
+    /* 3rd Request */
+    $resp3 = http_request('https://api.stripe.com/v1/payment_methods/'.$res2["payment_method"].'/attach', 'POST', 'customer='.$res1['id'].'', $sk . ':');
+    $curl3 = $resp3['body'];
+    if ($resp3['errno'] || $curl3 === false) {
+        phc_log('stripe4', '3rd request failed errno='.$resp3['errno'].' http='.$resp3['code']);
+    }
 
-    /* 3rd cURL Response */
+    /* 3rd Request Response */
     $res3 = json_decode($curl3, 1);
 
 }
@@ -113,7 +96,7 @@ if(isset($res1['error'])){
         EchoMessage('CCN LIVE',$cc_info.' >> '.$err);
     }elseif($code == "testmode_charges_only"||$decline_code == "testmode_charges_only"){
         //TESTMODE CHARGES
-        EchoMessage('DEAD',$cc_info.' >> SK Error: TestMode Charges ');
+        EchoMessage('DEAD',$cc_info.' >> SK Error: Test mode only - account cannot make live charges (see CHECK SK) ');
     }elseif(strpos($curl1, 'Sending credit card numbers directly to the Stripe API is generally unsafe.')) {
         //INTEGRATION ERROR
         EchoMessage('DEAD',$cc_info.' >> SK Error: Integration');
@@ -171,7 +154,7 @@ if(isset($res1['error'])){
 	        EchoMessage('CCN LIVE',$cc_info.' >> '.$err);
         }elseif($code == "testmode_charges_only"||$decline_code == "testmode_charges_only"){
 	        //TESTMODE CHARGES
-	        EchoMessage('DEAD',$cc_info.' >> SK Error: TestMode Charges ');
+	        EchoMessage('DEAD',$cc_info.' >> SK Error: Test mode only - account cannot make live charges (see CHECK SK) ');
     	}elseif(strpos($curl2, 'Sending credit card numbers directly to the Stripe API is generally unsafe.')) {
             //TURN ON INTEGRATION
             EchoMessage('DEAD',$cc_info.' >> SK Error: Integration');

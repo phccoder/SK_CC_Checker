@@ -457,6 +457,78 @@ select.glass-input option {
 .result-ccn .result-badge { background: var(--badge-ccn-bg); color: var(--badge-ccn); }
 .result-dead .result-badge { background: var(--badge-dead-bg); color: var(--badge-dead); }
 
+.result-item .result-time {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+
+/* New-result flash highlight */
+.result-item.is-new {
+  animation: result-flash 1.3s ease;
+}
+
+@keyframes result-flash {
+  0% { background: var(--accent-glow); border-color: var(--accent); }
+  100% { background: var(--input-bg); border-color: var(--input-border); }
+}
+
+/* ---------- Results Header / Run Status ---------- */
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.run-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-height: 34px;
+}
+
+.run-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.run-dot.idle { background: var(--text-secondary); }
+.run-dot.running { background: #34d399; animation: pulse 1.4s infinite; }
+.run-dot.paused { background: #fbbf24; }
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+  70% { box-shadow: 0 0 0 8px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+
+.run-pending {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.results-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-glass:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 /* ---------- Footer ---------- */
 .card-footer {
   text-align: center;

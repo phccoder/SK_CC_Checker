@@ -8,7 +8,7 @@ $site_icon = 'assets/img/phccoder.jpg';
 $owner = 'PHCC0D3r';
 
 $forceHttps = false; //Highly Recommended if SSL Certificate/HTTPS is available
-$forceAuth = true; //Require Users to input AuthPass
+$forceAuth = false; //Require Users to input AuthPass
 // $AuthPass = 'PHC-Coder'; 
 $AuthPass_Hashed = '$2y$10$4qxwi.5zyg68xAIDGbPWjeCUuTPiJMxwWhVpPqVp8Q41fq72zX.ou';
 

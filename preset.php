@@ -7,6 +7,7 @@ ini_set('display_errors', 0);
 
 /*===[Security Setup]=========================================*/
 include 'init.php';
+include 'http.php';
 if ($forceAuth && !isset($_SESSION["Auth"])) {
     EchoMessage('DEAD', 'Session Timeout: Please reload the website');
     exit();
@@ -31,6 +32,7 @@ if (!$testMode) {
     $j = 0;
     while ($j < count($bug_bin)) {
         if (substr($cc_info, 0, strlen($bug_bin[$j])) === $bug_bin[$j]) {
+            phc_log('preset', 'BIN excluded: ' . $cc_info . ' SK=' . phc_mask_sk($sk));
             EchoMessage('DEAD', $cc_info . ' >> BUG BIN Not Accepted for checking...');
             exit();
         }
@@ -55,9 +57,12 @@ $email = urlencode(emailGenerate());
 $m = ltrim($mm, "0");
 
 if (!preg_match('/^\d{6,19}$/', $cc) || !preg_match('/^\d{2}$/', $mm) || !preg_match('/^\d{4}$/', $yyyy) || !preg_match('/^\d{3,4}$/', $cvv)) {
+    phc_log('preset', 'Invalid card format: ' . $cc_info . ' SK=' . phc_mask_sk($sk));
     EchoMessage('DEAD', $cc_info . ' >> Invalid card format. Use: NUMBER|MM|YYYY|CVV');
     exit();
 }
+
+phc_log('preset', 'Checking ' . $cc_info . ' SK=' . phc_mask_sk($sk) . ' file=' . basename($_SERVER['PHP_SELF']));
 
 /*===[Identity Setup]=========================================*/
 // Try the public randomuser API but fall back to local data so checks
@@ -116,6 +121,7 @@ function emailGenerate($length = 10) {
     return $randomString.'@gmail.com';
 }
 function EchoMessage($CardStatus, $CardMessage) {
+    phc_log('echo', $CardStatus . ' | ' . $CardMessage);
     $MessageStructure = '';
     switch ($CardStatus) {
         case 'CVV LIVE':

@@ -35,7 +35,8 @@ function Find-Php {
         "${env:ProgramFiles(x86)}\php\php.exe",
         "$env:LOCALAPPDATA\Programs\PHP\php.exe",
         "C:\php\php.exe",
-        "C:\tools\php\php.exe"
+        "C:\tools\php\php.exe",
+        "$env:LOCALAPPDATA\Microsoft\WinGet\Packages\PHP.PHP.8.4\php.exe"
     )
     foreach ($c in $candidates) {
         if (Test-Path -LiteralPath $c) {

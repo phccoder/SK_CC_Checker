@@ -1,11 +1,22 @@
-$(document).ready(function () {
-    // Track visible result categories: 'cvv', 'ccn', 'dead' -> true/false
-    var shown = { cvv: false, ccn: false, dead: false };
+// Track visible result categories: 'cvv', 'ccn', 'dead' -> true/false
+var shown = { cvv: false, ccn: false, dead: false };
 
+// Queue-based checker run state (pause/resume support)
+var runState = { queue: [], total: 0, timer: null, active: false, paused: false, delay: 1000, apis: '', sk: '', telebot: '', tele_msg: '3' };
+var sortNewest = true;
+
+$(document).ready(function () {
     // Result visibility / counter pills
     $('.stat-pill[data-filter="cvv"]').on('click', function () { toggleFilter('cvv', shown); });
     $('.stat-pill[data-filter="ccn"]').on('click', function () { toggleFilter('ccn', shown); });
     $('.stat-pill[data-filter="dead"]').on('click', function () { toggleFilter('dead', shown); });
+
+    // Run status controls
+    $('#pauseBtn').on('click', togglePause);
+    $('#sortBtn').on('click', toggleSort);
+    $('#clearAllBtn').on('click', clearAllResults);
+    sortNewest = getStored('sort_newest', '1') === '1';
+    $('#sortBtn').text(sortNewest ? '▲ Newest' : '▼ Oldest');
 
     $("#howto").hide();
 
@@ -64,54 +75,129 @@ function checkCards() {
             return;
         }
     }
-    if (api_selected.includes("need SK")) {
-        var sk_live = $("#sk").val();
-        setCookie('sk_stored', sk_live, '3');
-    } else {
-        var sk_live = "";
-    }
-
+    var needSK = api_selected.includes("need SK");
     var telebot = $("#telebot").val();
-
     if (telebot.length == 0) {
         var telebot = "";
     } else {
         setCookie('chatID_stored', telebot, '3');
     }
+    if (needSK) {
+        setCookie('sk_stored', sk_live, '3');
+    } else {
+        var sk_live = "";
+    }
+
+    if (runState.active) {
+        showToast('Already Running', 'Use Pause/Resume or wait for the run to finish.', 'error');
+        playError();
+        return;
+    }
+
+    var list = line.split("\n").filter(function (s) { return s.trim() !== ''; });
+    if (list.length == 0) {
+        showToast('Error', 'Cards form empty.', 'error');
+        playError();
+        return;
+    }
 
     playClick();
-    var check_line = line.split("\n");
-    var total = check_line.length;
     credits();
-    check_line.forEach(function (value, index) {
-        setTimeout(
-            function () {
-                $.ajax({
-                    url: apis + '?cc_info=' + value + '&sk=' + sk_live + '&referrer=phccoder&telebot=' + telebot + "&tele_msg=" + tele_msg,
-                    type: 'GET',
-                    async: true,
-                    success: function (results) {
-                        var count_live_cvv = (eval(document.getElementById("approved_counter_cvv").innerHTML) + 1);
-                        var count_live_ccn = (eval(document.getElementById("approved_counter_ccn").innerHTML) + 1);
-                        var count_dead = (eval(document.getElementById("decline_counter").innerHTML) + 1);
-                        remove_line();
-                        if (results.match("CVV LIVE")) {
-                            $("#approved_counter_cvv").text(count_live_cvv);
-                            showToast('CVV LIVE', value, 'cvv');
-                            playSuccess();
-                        } else if (results.match("CCN LIVE")) {
-                            $("#approved_counter_ccn").text(count_live_ccn);
-                            showToast('CCN LIVE', value, 'ccn');
-                            playSuccess();
-                        } else if (results.match("DEAD")) {
-                            $("#decline_counter").text(count_dead);
-                        }
-                        result(results + "");
-                    }
-                });
-            }, delay * index
-        );
+    runState.queue = list.slice();
+    runState.total = list.length;
+    runState.delay = parseInt(delay || '0', 10);
+    runState.apis = apis;
+    runState.sk = sk_live;
+    runState.telebot = telebot;
+    runState.tele_msg = tele_msg;
+    runState.paused = false;
+    runState.active = true;
+    updateRunStatus();
+    startPump();
+}
+
+function startPump() {
+    if (runState.timer) return;
+    runState.timer = setInterval(function () {
+        if (!runState.active || runState.paused) return;
+        if (runState.queue.length === 0) {
+            stopPump();
+            runState.active = false;
+            updateRunStatus();
+            return;
+        }
+        var value = runState.queue.shift();
+        remove_line();
+        sendCardCheck(value);
+    }, runState.delay);
+}
+
+function stopPump() {
+    if (runState.timer) {
+        clearInterval(runState.timer);
+        runState.timer = null;
+    }
+}
+
+function sendCardCheck(value) {
+    $.ajax({
+        url: runState.apis + '?cc_info=' + value + '&sk=' + runState.sk + '&referrer=phccoder&telebot=' + runState.telebot + "&tele_msg=" + runState.tele_msg,
+        type: 'GET',
+        async: true,
+        timeout: 30000,
+        success: function (results) {
+            var count_live_cvv = (eval(document.getElementById("approved_counter_cvv").innerHTML) + 1);
+            var count_live_ccn = (eval(document.getElementById("approved_counter_ccn").innerHTML) + 1);
+            var count_dead = (eval(document.getElementById("decline_counter").innerHTML) + 1);
+            if (results.match("CVV LIVE")) {
+                $("#approved_counter_cvv").text(count_live_cvv);
+                showToast('CVV LIVE', value, 'cvv');
+                playSuccess();
+            } else if (results.match("CCN LIVE")) {
+                $("#approved_counter_ccn").text(count_live_ccn);
+                showToast('CCN LIVE', value, 'ccn');
+                playSuccess();
+            } else if (results.match("DEAD")) {
+                $("#decline_counter").text(count_dead);
+            }
+            result(results + "");
+        },
+        error: function (xhr) {
+            showToast('Check Failed', 'HTTP ' + xhr.status + ' — see logs/checker.log.', 'error');
+            playError();
+        }
     });
+    updateRunStatus();
+}
+
+function togglePause() {
+    if (!runState.active) return;
+    playClick();
+    runState.paused = !runState.paused;
+    updateRunStatus();
+}
+
+function updateRunStatus() {
+    var $pause = $("#pauseBtn");
+    if (!runState.active) {
+        $("#runDot").attr('class', 'run-dot idle');
+        $("#runStatus").text('Idle');
+        $("#runPending").text('');
+        $pause.html('Pause');
+        $pause.attr('disabled', true);
+    } else if (runState.paused) {
+        $("#runDot").attr('class', 'run-dot paused');
+        $("#runStatus").text('Paused');
+        $("#runPending").text(runState.queue.length + ' left');
+        $pause.html('Resume');
+        $pause.removeAttr('disabled');
+    } else {
+        $("#runDot").attr('class', 'run-dot running');
+        $("#runStatus").text('Running');
+        $("#runPending").text(runState.queue.length + ' left');
+        $pause.html('Pause');
+        $pause.removeAttr('disabled');
+    }
 }
 
 function checkSK() {
@@ -135,6 +221,7 @@ function checkSK() {
                 url: 'skcheck.php?sk=' + sk_live + '&referrer=phccoder',
                 type: 'GET',
                 async: true,
+                timeout: 30000,
                 beforeSend: function () {
                     setModalMsg('Checking SK provided...');
                 },
@@ -142,10 +229,23 @@ function checkSK() {
                     if (data.match("LIVE")) {
                         setModalMsg('SK provided is <strong>LIVE</strong>.');
                         playSuccess();
+                    } else if (data.match("LIMITED")) {
+                        setModalMsg('SK is <strong>LIVE</strong> but raw-card processing is disabled. Request "Raw Card Data API Access" from Stripe support or check https://dashboard.stripe.com/settings/integration (see logs/checker.log).');
+                        playSuccess();
+                    } else if (data.match("NOT_LIVE")) {
+                        setModalMsg('SK is valid but <strong>charges are disabled</strong> on this account (<code>charges_enabled=false</code>). Activate live charges in the Stripe Dashboard (Settings &rarr; Account) — see logs/checker.log.');
+                        playError();
                     } else if (data.match("DEAD")) {
                         setModalMsg('SK provided is <strong>DEAD</strong>.');
                         playError();
+                    } else {
+                        setModalMsg('Unexpected response. See logs/checker.log.');
+                        playError();
                     }
+                },
+                error: function (xhr) {
+                    setModalMsg('Request failed (HTTP ' + xhr.status + '). See logs/checker.log.');
+                    playError();
                 }
             });
         }, 2000);
@@ -165,6 +265,7 @@ function testBot() {
                 url: 'telebot.php?telebot=' + telebot + '&referrer=phccoder',
                 type: 'GET',
                 async: true,
+                timeout: 30000,
 
                 success: function (data) {
                     if (data.match("LIVE")) {
@@ -173,7 +274,14 @@ function testBot() {
                     } else if (data.match("DEAD")) {
                         showToast('Bot', 'Forwarder is DEAD.', 'error');
                         playError();
+                    } else {
+                        showToast('Bot', 'Unexpected response.', 'error');
+                        playError();
                     }
+                },
+                error: function (xhr) {
+                    showToast('Bot', 'Request failed (HTTP ' + xhr.status + ').', 'error');
+                    playError();
                 }
             });
         });
@@ -214,7 +322,7 @@ function result(str) {
     $html.find('.live_cvv').addClass('result-cvv').removeClass('live_cvv');
     $html.find('.live_ccn').addClass('result-ccn').removeClass('live_ccn');
     $html.find('.dead').addClass('result-dead').removeClass('dead');
-    $html.find('div').addClass('result-item').removeAttr('style');
+    $html.find('div').addClass('result-item is-new').removeAttr('style');
     // Rebuild the badge + text structure
     $html.find('.result-item').each(function () {
         var $item = $(this);
@@ -223,11 +331,49 @@ function result(str) {
         $item.empty();
         $item.append('<span class="result-badge"></span>');
         $item.append('<span class="result-text"></span>');
+        $item.append('<span class="result-time"></span>');
         $item.find('.result-badge').text(badge);
         $item.find('.result-text').text(text);
+        $item.find('.result-time').text(nowTime());
     });
-    $('#results').append($html.contents());
-    $('#results').scrollTop($('#results')[0].scrollHeight);
+    var $items = $html.contents();
+    var $results = $('#results');
+    if (sortNewest) {
+        $results.prepend($items);
+        $results.scrollTop(0);
+    } else {
+        $results.append($items);
+        $results.scrollTop($results[0].scrollHeight);
+    }
+    setTimeout(function () {
+        $items.find('.result-item').removeClass('is-new');
+    }, 1400);
+}
+
+// Clear all result rows and reset counters
+function clearAllResults() {
+    playClick();
+    $('#results').empty();
+    $("#approved_counter_cvv").text(0);
+    $("#approved_counter_ccn").text(0);
+    $("#decline_counter").text(0);
+}
+
+// Toggle newest-first / oldest-first ordering of existing results
+function toggleSort() {
+    playClick();
+    sortNewest = !sortNewest;
+    setCookie('sort_newest', sortNewest ? '1' : '0');
+    $('#sortBtn').text(sortNewest ? '▲ Newest' : '▼ Oldest');
+    var $items = $('#results .result-item').detach();
+    $('#results').empty().append($items.get().reverse());
+    $('#results').scrollTop(0);
+}
+
+function nowTime() {
+    var d = new Date();
+    var p = function (n) { return (n < 10 ? '0' : '') + n; };
+    return p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
 }
 
 // Clear all results of a given category ('cvv' | 'ccn' | 'dead')

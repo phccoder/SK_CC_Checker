@@ -8,59 +8,41 @@ ini_set('display_errors', 0);
 /*===[Include Setup]==========================================*/
 include 'preset.php';
 
-/*===[cURL Processes]=========================================*/
-/* 1st cURL */
-$ch1 = curl_init();
-curl_setopt($ch1, CURLOPT_URL, 'https://api.stripe.com/v1/payment_methods');
-curl_setopt($ch1, CURLOPT_RETURNTRANSFER, 1);
-curl_setopt($ch1, CURLOPT_POST, 1);
-curl_setopt($ch1, CURLOPT_POSTFIELDS, 'type=card&card[number]='.$cc.'&card[exp_month]='.$mm.'&card[exp_year]='.$yyyy.'&card[cvc]='.$cvv.'');
-curl_setopt($ch1, CURLOPT_USERPWD, $sk . ':' . '');
-$headers = array();
-$headers[] = 'Content-Type: application/x-www-form-urlencoded';
-curl_setopt($ch1, CURLOPT_HTTPHEADER, $headers);
-$result1 = curl_exec($ch1);
-curl_close($ch1);
+/*===[HTTP Processes]=========================================*/
+/* 1st Request */
+$resp1 = http_request('https://api.stripe.com/v1/payment_methods', 'POST', 'type=card&card[number]='.$cc.'&card[exp_month]='.$mm.'&card[exp_year]='.$yyyy.'&card[cvc]='.$cvv.'', $sk . ':');
+$result1 = $resp1['body'];
+if ($resp1['errno'] || $result1 === false) {
+    phc_log('stripe2', '1st request failed errno='.$resp1['errno'].' http='.$resp1['code']);
+}
 
-/* 1st cURL Results */
+/* 1st Request Results */
 $res1 = json_decode($result1, 1);
 $pm = $res1['id'];
 
 if (isset($pm)) {
-    /* 2nd cURL */
-    $ch2 = curl_init();
-    curl_setopt($ch2, CURLOPT_URL, 'https://api.stripe.com/v1/customers');
-    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch2, CURLOPT_POST, 1);
-    curl_setopt($ch2, CURLOPT_POSTFIELDS, 'name='.$name_full.'&email='.$email.'&description=phccoder&address[line1]='.$location_street.'&address[city]='.$location_city.'&address[state]='.$location_state.'&address[postal_code]='.$location_postcode.'&address[country]=US');
-    curl_setopt($ch2, CURLOPT_USERPWD, $sk . ':' . '');
-    $headers = array();
-    $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-    curl_setopt($ch2, CURLOPT_HTTPHEADER, $headers);
-    $result2 = curl_exec($ch2);
-    curl_close($ch2);
+    /* 2nd Request */
+    $resp2 = http_request('https://api.stripe.com/v1/customers', 'POST', 'name='.$name_full.'&email='.$email.'&description=phccoder&address[line1]='.$location_street.'&address[city]='.$location_city.'&address[state]='.$location_state.'&address[postal_code]='.$location_postcode.'&address[country]=US', $sk . ':');
+    $result2 = $resp2['body'];
+    if ($resp2['errno'] || $result2 === false) {
+        phc_log('stripe2', '2nd request failed errno='.$resp2['errno'].' http='.$resp2['code']);
+    }
 
-    /* 2nd cURL Results */
+    /* 2nd Request Results */
     $res2 = json_decode($result2, 1);
     $cus = $res2['id'];
 
 }
 
 if (isset($cus)) {
-    /* 3rd cURL */
-    $ch3 = curl_init();
-    curl_setopt($ch3, CURLOPT_URL, 'https://api.stripe.com/v1/payment_methods/'.$pm.'/attach');
-    curl_setopt($ch3, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch3, CURLOPT_POST, 1);
-    curl_setopt($ch3, CURLOPT_POSTFIELDS, '&customer='.$cus.'');
-    curl_setopt($ch3, CURLOPT_USERPWD, $sk . ':' . '');
-    $headers = array();
-    $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-    curl_setopt($ch3, CURLOPT_HTTPHEADER, $headers);
-    $result3 = curl_exec($ch3);
-    curl_close($ch3);
+    /* 3rd Request */
+    $resp3 = http_request('https://api.stripe.com/v1/payment_methods/'.$pm.'/attach', 'POST', '&customer='.$cus.'', $sk . ':');
+    $result3 = $resp3['body'];
+    if ($resp3['errno'] || $result3 === false) {
+        phc_log('stripe2', '3rd request failed errno='.$resp3['errno'].' http='.$resp3['code']);
+    }
 
-    /* 3rd cURL Results */
+    /* 3rd Request Results */
     $res3 = json_decode($result3, 1);
 
 }
@@ -113,7 +95,7 @@ if (isset($res1['error'])) {
         EchoMessage('CCN LIVE',$cc_info.' >> '.$err);
     }elseif($code == "testmode_charges_only"||$decline_code == "testmode_charges_only"){
         //TESTMODE CHARGES
-        EchoMessage('DEAD',$cc_info.' >> SK Error: TestMode Charges ');
+        EchoMessage('DEAD',$cc_info.' >> SK Error: Test mode only - account cannot make live charges (see CHECK SK) ');
     }elseif(strpos($result1, 'Sending credit card numbers directly to the Stripe API is generally unsafe.')) {
         //INTEGRATION ERROR
         EchoMessage('DEAD',$cc_info.' >> SK Error: Integration');
